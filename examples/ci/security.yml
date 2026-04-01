@@ -1,0 +1,52 @@
+name: Security Audit
+
+on:
+  schedule:
+    # Weekly on Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+jobs:
+  cargo-audit:
+    name: Cargo Audit (Weekly)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run audit
+        run: cargo audit --file contracts/Cargo.lock
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Security: cargo-audit found vulnerabilities (${new Date().toISOString().slice(0, 10)})`;
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security',
+              per_page: 100,
+            });
+            const duplicate = existingIssues.data.find(i => i.title.startsWith('Security: cargo-audit'));
+            if (!duplicate) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body: [
+                  '## Cargo Audit Failure',
+                  '',
+                  '`cargo audit` found known vulnerabilities in `contracts/Cargo.lock`.',
+                  '',
+                  `**Workflow run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                  '',
+                  'Review the workflow logs and update affected dependencies.',
+                ].join('\n'),
+                labels: ['security'],
+              });
+            }

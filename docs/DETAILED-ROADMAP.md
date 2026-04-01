@@ -29,9 +29,27 @@
 
 ---
 
-## Getting Started: Devnet Faucets & Testing
+## Getting Started: Zero to Devnet
 
-Before testing or deploying contracts on devnet, you need test tokens. All faucets are free and tokens have no real value.
+### Step 0: Scaffold a New Project
+
+```bash
+# Option A — Anchor only (contracts)
+anchor init my-project
+cd my-project
+
+# Option B — Full-stack dApp (Next.js + Anchor)
+npx create-solana-dapp my-dapp
+cd my-dapp
+```
+
+After scaffolding, install the toolkit into your project:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/solanabr/solana-claude/main/install.sh | bash
+cp path/to/solana-TOOLKIT/.github/workflows/* .github/workflows/
+cp path/to/solana-TOOLKIT/.env.example .env
+```
 
 ### Step 1: Configure Solana CLI for Devnet
 
@@ -125,6 +143,18 @@ After deployment, update program IDs in:
 - `Anchor.toml`
 - `programs/*/src/lib.rs` (in `declare_id!()`)
 - `.env` files (frontend/backend)
+
+### Step 6: Setup Phantom Wallet for Devnet (Frontend Testing)
+
+To test your dApp frontend, Phantom needs to be on devnet:
+
+1. Open **Phantom** wallet (browser extension)
+2. Click the **hamburger menu** (top-left) → **Settings**
+3. **Developer Settings** → enable **Testnet Mode**
+4. Select **Solana Devnet**
+5. Your wallet now shows devnet balances and signs devnet transactions
+
+> After getting SOL/USDC from faucets (steps 2-3), they appear in Phantom on devnet.
 
 ### Cost Summary (Devnet Testing)
 
@@ -358,6 +388,113 @@ For DeFi applications:
 - Cross-chain prices
 
 **Mitigation:** Oracle integration (Pyth Network recommended for Solana).
+
+---
+
+## CI/CD: GitHub Secrets Setup
+
+The CI pipeline (`ci.yml`) deploys to devnet automatically on push to `main`. It needs a deployer keypair stored as a GitHub secret.
+
+### Setup Steps
+
+```bash
+# 1. Generate a dedicated deploy keypair (don't reuse your dev wallet)
+solana-keygen new --no-passphrase -o deployer-keypair.json
+
+# 2. Fund it with devnet SOL (need ~5 SOL for deployments)
+solana airdrop 5 $(solana-keygen pubkey deployer-keypair.json) --url devnet
+
+# 3. Copy the JSON content
+cat deployer-keypair.json
+# Output: [123,45,67,...]
+```
+
+Then in GitHub:
+
+1. Go to your repo → **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Name: `DEVNET_DEPLOYER_KEYPAIR`
+4. Value: paste the full JSON array from step 3
+5. Click **Add secret**
+
+Also create a **deployment environment**:
+
+1. **Settings** → **Environments** → **New environment**
+2. Name: `devnet`
+3. (Optional) Add required reviewers for manual approval before deploy
+
+> Never commit keypair files to git. The `.gitignore` already excludes `*.json` keypairs.
+
+---
+
+## Troubleshooting
+
+### "Airdrop request failed"
+
+```bash
+# Rate-limited by the devnet RPC. Solutions:
+# 1. Use the web faucet instead (login with GitHub for 10 SOL/day)
+open https://faucet.solana.com
+
+# 2. Wait ~24h for rate limit reset
+
+# 3. Try a different RPC
+solana airdrop 2 --url https://devnet.helius-rpc.com/?api-key=YOUR_KEY
+```
+
+### "Insufficient funds" on deploy
+
+Program deployment requires ~3-5 SOL for rent. Check and top up:
+
+```bash
+solana balance                        # check current balance
+# Use faucet.solana.com with GitHub login for up to 10 SOL/day
+```
+
+### "Account does not exist"
+
+```bash
+# The program isn't deployed, or you're on the wrong network
+solana config get                     # verify you're on devnet
+solana program show <PROGRAM_ID>      # check if program exists
+```
+
+### "Transaction simulation failed"
+
+```bash
+# Watch real-time program logs to see the actual error
+solana logs <PROGRAM_ID>
+
+# In another terminal, run your failing transaction again
+# The logs will show the exact instruction that failed and why
+```
+
+### Phantom won't connect to localhost
+
+```
+# Phantom blocks HTTP by default. Solutions:
+# 1. Use HTTPS in dev (Next.js supports this)
+# 2. Or allow insecure localhost in Phantom:
+#    Settings > Developer Settings > Trust localhost
+```
+
+### anchor build fails with "lock file needs update"
+
+```bash
+cd contracts
+cargo update                          # update Cargo.lock
+anchor build                          # retry
+```
+
+### CI deploy job fails
+
+1. Check that `DEVNET_DEPLOYER_KEYPAIR` secret is set (see CI/CD section above)
+2. Check that the `devnet` environment exists in repo settings
+3. Check that the deployer wallet has enough SOL:
+
+```bash
+solana balance <DEPLOYER_ADDRESS> --url devnet
+```
 
 ---
 
