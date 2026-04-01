@@ -93,6 +93,84 @@ cd your-solana-project
 curl -fsSL https://raw.githubusercontent.com/solanabr/solana-claude/main/install.sh | bash
 ```
 
+## Getting Started: Devnet Faucets, Testing & Deploy
+
+Before testing or deploying contracts on devnet, you need test tokens. All faucets are free and tokens have no real value.
+
+### 1. Configure Solana for Devnet
+
+```bash
+solana config set --url https://api.devnet.solana.com
+solana-keygen new --no-passphrase     # skip if you already have a wallet
+solana address                         # your devnet address
+```
+
+### 2. Get Devnet SOL (transaction fees)
+
+**Web faucet (recommended — up to 10 SOL/day with GitHub login):**
+
+1. Go to [faucet.solana.com](https://faucet.solana.com)
+2. **Login with GitHub** — unlocks up to **10 SOL per day** (without login: ~2 SOL/day, rate-limited)
+3. Select **Devnet**, paste your address, request SOL
+
+**CLI airdrop (quick, but limited):**
+
+```bash
+solana airdrop 2            # max 2 SOL per request
+solana balance              # verify
+```
+
+**Other faucets:** [solfaucet.com](https://solfaucet.com) | [QuickNode](https://faucet.quicknode.com/solana/devnet)
+
+### 3. Get Devnet USDC (token transfers, DeFi testing)
+
+1. Go to [faucet.circle.com](https://faucet.circle.com)
+2. Select **USDC** on **Solana** → **Devnet**
+3. Paste your address → claim up to **10 USDC**
+
+USDC Devnet Mint: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
+
+### 4. Build & Test Contracts
+
+```bash
+cd contracts/
+
+anchor build                          # compile programs
+anchor test                           # unit + integration tests
+trident fuzz run --timeout 600        # fuzz testing (10 min)
+
+# Security checks
+cargo clippy -- -D warnings -W clippy::unwrap_used -W clippy::arithmetic_side_effects
+cargo audit
+```
+
+### 5. Deploy to Devnet
+
+```bash
+cd contracts/
+
+solana balance                        # need >= 5 SOL for deployment
+anchor deploy --provider.cluster devnet
+solana program show <PROGRAM_ID>      # verify deployment
+```
+
+After deploying, update program IDs in:
+
+- `Anchor.toml`
+- `programs/*/src/lib.rs` (`declare_id!()`)
+- `.env` files (frontend/backend)
+
+### Devnet Cost Summary
+
+| Item                 | Cost                                      |
+| -------------------- | ----------------------------------------- |
+| SOL (faucet)         | Free — up to 10 SOL/day with GitHub login |
+| USDC (Circle faucet) | Free — up to 10 USDC per request          |
+| Program deployment   | Free (devnet SOL)                         |
+| RPC calls            | Free (public devnet endpoint)             |
+
+---
+
 ## Devnet to Mainnet Roadmap
 
 ### Phase 1: Foundation (Free)

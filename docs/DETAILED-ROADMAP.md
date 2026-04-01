@@ -29,6 +29,114 @@
 
 ---
 
+## Getting Started: Devnet Faucets & Testing
+
+Before testing or deploying contracts on devnet, you need test tokens. All faucets are free and tokens have no real value.
+
+### Step 1: Configure Solana CLI for Devnet
+
+```bash
+# Set devnet as default
+solana config set --url https://api.devnet.solana.com
+
+# Create a wallet (if you don't have one)
+solana-keygen new --no-passphrase
+
+# Check your address
+solana address
+```
+
+### Step 2: Get Devnet SOL
+
+SOL is required for transaction fees and rent on devnet.
+
+**Option A — Solana Faucet (recommended, up to 10 SOL/day with GitHub login):**
+
+1. Go to [faucet.solana.com](https://faucet.solana.com)
+2. **Login with GitHub** to unlock the higher limit (up to **10 SOL per day**)
+   - Without login: limited to ~2 SOL/day and rate-limited
+3. Select **Devnet**
+4. Paste your wallet address
+5. Request SOL
+
+**Option B — CLI airdrop (quick, but rate-limited):**
+
+```bash
+solana airdrop 2          # Request 2 SOL (max per request)
+solana airdrop 2          # Repeat if needed
+solana balance            # Verify balance
+```
+
+> CLI airdrops are rate-limited (~2 SOL/24h). If you hit the limit, use the web faucet with GitHub login.
+
+**Option C — Alternative faucets:**
+
+- [solfaucet.com](https://solfaucet.com)
+- [QuickNode faucet](https://faucet.quicknode.com/solana/devnet)
+
+### Step 3: Get Devnet USDC
+
+USDC is needed for testing token transfers, x402 payments, and DeFi flows.
+
+1. Go to [faucet.circle.com](https://faucet.circle.com)
+2. Select **USDC** on **Solana**
+3. Select **Devnet**
+4. Paste your wallet address
+5. Claim up to **10 USDC**
+
+USDC Devnet Mint: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
+
+### Step 4: Build & Test Contracts
+
+```bash
+cd contracts/
+
+# Build Anchor programs
+anchor build
+
+# Run unit + integration tests
+anchor test
+
+# Fuzz testing (10 min session)
+trident fuzz run --timeout 600
+
+# Security lints
+cargo clippy -- -D warnings -W clippy::unwrap_used -W clippy::arithmetic_side_effects
+cargo audit
+```
+
+### Step 5: Deploy to Devnet
+
+```bash
+cd contracts/
+
+# Ensure you have enough SOL (>= 5 SOL recommended for program deployment)
+solana balance
+
+# Deploy programs
+anchor deploy --provider.cluster devnet
+
+# Verify deployment
+solana program show <PROGRAM_ID>
+```
+
+After deployment, update program IDs in:
+
+- `Anchor.toml`
+- `programs/*/src/lib.rs` (in `declare_id!()`)
+- `.env` files (frontend/backend)
+
+### Cost Summary (Devnet Testing)
+
+| Item                 | Cost                                      |
+| -------------------- | ----------------------------------------- |
+| SOL (faucet)         | Free — up to 10 SOL/day with GitHub login |
+| USDC (Circle faucet) | Free — up to 10 USDC per request          |
+| Program deployment   | Free (devnet SOL)                         |
+| RPC calls            | Free (public devnet endpoint)             |
+
+---
+
 ## Devnet → Mainnet Roadmap
 
 ### PHASE 1: Foundation ✅ DONE
