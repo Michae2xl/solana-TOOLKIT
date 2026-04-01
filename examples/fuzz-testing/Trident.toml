@@ -1,0 +1,12 @@
+[fuzz.metrics]
+enabled = true
+
+
+[[fuzz.programs]]
+address = "CLAW2222222222222222222222222222222222222222"
+program = "../target/deploy/claw_shark_curve.so"
+
+[[fuzz.programs]]
+address = "CLAW1111111111111111111111111111111111111111"
+program = "../target/deploy/claw_shark.so"
+ 

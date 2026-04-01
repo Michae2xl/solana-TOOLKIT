@@ -1,0 +1,202 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOLANA_CLI_VERSION: "3.1.12"
+  ANCHOR_VERSION: "0.31.1"
+  RUST_TOOLCHAIN: "stable"
+  NODE_VERSION: "20"
+
+jobs:
+  # ─── Rust: Format ───────────────────────────────────────────
+  rust-fmt:
+    name: Rust Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --check --manifest-path contracts/Cargo.toml
+
+  # ─── Rust: Clippy ───────────────────────────────────────────
+  rust-clippy:
+    name: Rust Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Cargo registry + build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            contracts/target
+          key: cargo-clippy-${{ runner.os }}-${{ hashFiles('contracts/Cargo.lock') }}
+          restore-keys: cargo-clippy-${{ runner.os }}-
+
+      - name: Run Clippy
+        run: |
+          cargo clippy \
+            --manifest-path contracts/Cargo.toml \
+            --all-targets \
+            -- -D warnings \
+               -W clippy::unwrap_used \
+               -W clippy::arithmetic_side_effects
+
+  # ─── Anchor Build ───────────────────────────────────────────
+  anchor-build:
+    name: Anchor Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry + build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            contracts/target
+          key: cargo-anchor-${{ runner.os }}-${{ hashFiles('contracts/Cargo.lock') }}
+          restore-keys: cargo-anchor-${{ runner.os }}-
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_CLI_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor CLI
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor \
+            --tag v${{ env.ANCHOR_VERSION }} \
+            anchor-cli \
+            --locked
+
+      - name: Generate keypair (required by Anchor build)
+        run: solana-keygen new --no-bip39-passphrase --silent
+
+      - name: Anchor build
+        run: cd contracts && anchor build
+
+  # ─── Security: cargo-audit ──────────────────────────────────
+  cargo-audit:
+    name: Cargo Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run audit
+        run: cargo audit --file contracts/Cargo.lock
+
+  # ─── Frontend ───────────────────────────────────────────────
+  frontend:
+    name: Frontend (Next.js)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: npm-frontend-${{ runner.os }}-${{ hashFiles('frontend/package.json') }}
+          restore-keys: npm-frontend-${{ runner.os }}-
+
+      - run: cd frontend && npm ci
+      - run: cd frontend && npx next build
+
+  # ─── Backend ────────────────────────────────────────────────
+  backend:
+    name: Backend (Hono)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: backend/node_modules
+          key: npm-backend-${{ runner.os }}-${{ hashFiles('backend/package.json') }}
+          restore-keys: npm-backend-${{ runner.os }}-
+
+      - run: cd backend && npm ci
+      - name: Type check
+        run: cd backend && npm run build
+
+  # ─── Deploy to Devnet (main only, manual approval) ─────────
+  deploy-devnet:
+    name: Deploy to Devnet
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [rust-fmt, rust-clippy, anchor-build, cargo-audit, frontend, backend]
+    runs-on: ubuntu-latest
+    environment: devnet
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry + build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            contracts/target
+          key: cargo-deploy-${{ runner.os }}-${{ hashFiles('contracts/Cargo.lock') }}
+          restore-keys: cargo-deploy-${{ runner.os }}-
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_CLI_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor CLI
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor \
+            --tag v${{ env.ANCHOR_VERSION }} \
+            anchor-cli \
+            --locked
+
+      - name: Configure Solana for devnet
+        run: |
+          solana config set --url https://api.devnet.solana.com
+          echo "${{ secrets.DEVNET_DEPLOYER_KEYPAIR }}" > /tmp/deployer.json
+          solana config set --keypair /tmp/deployer.json
+
+      - name: Anchor build
+        run: cd contracts && anchor build
+
+      - name: Deploy to devnet
+        run: cd contracts && anchor deploy --provider.cluster devnet
+
+      - name: Cleanup keypair
+        if: always()
+        run: rm -f /tmp/deployer.json
