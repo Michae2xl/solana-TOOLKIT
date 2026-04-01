@@ -1,4 +1,4 @@
-# SharkTank — Solana Production Toolkit
+# Solana Production Toolkit — Detailed Roadmap
 
 > Complete guide from scaffold to mainnet. Updated 2026-03-31.
 
@@ -27,15 +27,6 @@
 | MCP Servers  | 6     | Helius, solana-dev, Context7, Playwright, context-mode, memsearch |
 | Skills (ext) | 9     | Solana Foundation, SendAI, Trail of Bits, QEDGen, etc.            |
 
-### Deployed Contracts
-
-**Solana Devnet:**
-| Program | Program ID |
-|---------|-----------|
-| claw_shark (Launch Vault) | `JB5KCYi96KaeoLhcyGmi9sEo6wQs4PFbGaPA4Xh1tKQq` |
-| claw_shark_curve (Bonding Curve) | `8AzK5ZoKFNALWq7Hx29e3UTsfxfXzDAaHbbg7sdTB8X6` |
-| Authority | `8HXNYtEzNwhGFjZbr5rSY6iDLVH6cUc2iKnvK3mf4df8` |
-
 ---
 
 ## Devnet → Mainnet Roadmap
@@ -44,7 +35,7 @@
 
 | Item                           | Status | Notes                                       |
 | ------------------------------ | ------ | ------------------------------------------- |
-| Anchor programs compile        | ✅     | claw-shark + claw-shark-curve               |
+| Anchor programs compile        | ✅     | Anchor programs compiled                    |
 | Checked arithmetic (no unwrap) | ✅     | All unwrap() replaced with ok_or(ErrorCode) |
 | Frontend functional (27 pages) | ✅     | Next.js 15, SSE, wallet connect             |
 | Backend API                    | ✅     | Hono, LLM integration, x402                 |
@@ -265,7 +256,7 @@ For DeFi applications:
 ## File Locations
 
 ```
-shark/
+your-project/
 ├── .github/workflows/
 │   ├── ci.yml                    # CI/CD pipeline
 │   └── security.yml              # Weekly security scan
@@ -278,8 +269,8 @@ shark/
 │   └── settings.json             # Permissions, hooks
 ├── contracts/
 │   ├── programs/
-│   │   ├── claw-shark/           # Launch Vault program
-│   │   └── claw-shark-curve/     # Bonding Curve program
+│   │   ├── your-program/           # Launch Vault program
+│   │   └── your-program-curve/     # Bonding Curve program
 │   └── trident-tests/            # Fuzz testing
 ├── frontend/
 │   ├── e2e/                      # Playwright E2E tests

@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Navigation — critical pages load", () => {
   test("homepage loads with expected content", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle(/sharktank/i);
+    await expect(page).toHaveTitle(/your-app/i);
     await expect(page.locator("body")).toBeVisible();
   });
 
