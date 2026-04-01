@@ -1,8 +1,48 @@
-# Solana TOOLKIT
+<p align="center">
+  <img src="assets/banner.svg" alt="Solana TOOLKIT" width="100%"/>
+</p>
 
-> Complete Solana development toolkit — from scaffold to mainnet.
+<p align="center">
+  <strong>Complete Solana development toolkit — from scaffold to mainnet.</strong>
+</p>
 
-Production-grade setup for building, testing, auditing, and deploying Solana programs with AI-powered agents, formal verification, and automated security pipelines.
+<p align="center">
+  <a href="#quick-install"><img src="https://img.shields.io/badge/install-30s-14F195?style=flat-square" alt="Install"/></a>
+  <a href="https://github.com/Michae2xl/solana-TOOLKIT/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-9945FF?style=flat-square" alt="License"/></a>
+  <a href="#whats-included"><img src="https://img.shields.io/badge/tools-15%20agents%20%C2%B7%2024%20commands-00D1FF?style=flat-square" alt="Tools"/></a>
+  <a href="#devnet-to-mainnet-roadmap"><img src="https://img.shields.io/badge/roadmap-7%20phases-9945FF?style=flat-square" alt="Roadmap"/></a>
+</p>
+
+<p align="center">
+  Production-grade setup for building, testing, auditing, and deploying Solana programs<br/>with AI-powered agents, formal verification, and automated security pipelines.
+</p>
+
+---
+
+## Table of Contents
+
+- [What's Included](#whats-included)
+- [Quick Install](#quick-install)
+- [Manual Install](#manual-install)
+- [Getting Started: Zero to Devnet](#getting-started-zero-to-devnet)
+  - [0. Scaffold a New Project](#0-scaffold-a-new-project)
+  - [1. Configure Solana for Devnet](#1-configure-solana-for-devnet)
+  - [2. Get Devnet SOL](#2-get-devnet-sol-transaction-fees)
+  - [3. Get Devnet USDC](#3-get-devnet-usdc-token-transfers-defi-testing)
+  - [4. Build & Test Contracts](#4-build--test-contracts)
+  - [5. Deploy to Devnet](#5-deploy-to-devnet)
+  - [6. Setup Phantom for Devnet](#6-setup-phantom-for-devnet-frontend-testing)
+- [Devnet to Mainnet Roadmap](#devnet-to-mainnet-roadmap)
+- [What Tools Don't Cover](#what-tools-dont-cover)
+- [Cost Summary](#cost-summary)
+- [Project Structure](#project-structure)
+- [Common Commands](#common-commands)
+- [CI/CD: GitHub Secrets Setup](#cicd-github-secrets-setup)
+- [Troubleshooting](#troubleshooting)
+- [Anchor.toml Configuration](#anchortoml-configuration)
+- [Program Upgrades](#program-upgrades)
+- [IDL to Frontend](#idl-to-frontend-connecting-contracts-to-your-dapp)
+- [References](#references)
 
 ## What's Included
 
@@ -294,13 +334,35 @@ your-project/
 │   └── settings.json             # Permissions, hooks
 ├── contracts/
 │   ├── programs/                 # Anchor programs
-│   └── trident-tests/            # Fuzz testing
+│   ├── trident-tests/            # Fuzz testing
+│   └── Anchor.toml               # Program IDs, cluster, wallet
 ├── frontend/
+│   ├── src/idl/                  # IDL + types (from anchor build)
 │   ├── e2e/                      # Playwright E2E tests
 │   └── playwright.config.ts
 ├── docs/
 │   └── SOLANA-TOOLKIT.md         # Detailed roadmap + costs
 └── CLAUDE.md                     # AI dev configuration
+```
+
+### Toolkit Repository
+
+```
+solana-TOOLKIT/
+├── assets/
+│   └── banner.svg                # GitHub README banner
+├── docs/
+│   └── DETAILED-ROADMAP.md       # Full 7-phase roadmap with costs
+├── examples/
+│   ├── anchor/                   # Anchor.toml config + first deploy guide
+│   ├── frontend/                 # useProgram hook + IDL integration
+│   ├── ci/                       # CI/CD workflows + secrets setup
+│   ├── e2e/                      # Playwright test examples
+│   └── fuzz-testing/             # Trident fuzz test examples
+├── .github/workflows/            # Ready-to-copy CI/CD pipelines
+├── .env.example                  # API keys template
+├── install.sh                    # One-command installer
+└── README.md                     # This file
 ```
 
 ## Common Commands
@@ -606,6 +668,24 @@ See `examples/frontend/` for a complete `useProgram` hook and usage patterns.
 - [Helius](https://dev.helius.xyz/) — Solana RPC and developer tools
 - [Trident](https://github.com/Ackee-Blockchain/trident) — Fuzz testing for Anchor
 
+## Contributing
+
+Contributions are welcome! If you have improvements, new examples, or bug fixes:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feat/my-improvement`)
+3. Commit your changes (conventional commits: `feat:`, `fix:`, `docs:`)
+4. Push and open a Pull Request
+
+---
+
 ## License
 
 MIT
+
+---
+
+<p align="center">
+  <sub>Built with Solana, Anchor, and Claude Code</sub><br/>
+  <a href="#table-of-contents">Back to top</a>
+</p>
