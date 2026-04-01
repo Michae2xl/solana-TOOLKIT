@@ -498,6 +498,163 @@ solana balance <DEPLOYER_ADDRESS> --url devnet
 
 ---
 
+## Anchor.toml Configuration
+
+The `Anchor.toml` file is the configuration hub — it maps program names to deployed addresses and sets the default cluster.
+
+```toml
+[programs.devnet]
+my_program = "YOUR_PROGRAM_ID_HERE"
+
+[programs.mainnet]
+my_program = "YOUR_PROGRAM_ID_HERE"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+```
+
+### First Deploy Flow
+
+```bash
+# 1. Build (generates keypairs in target/deploy/)
+anchor build
+
+# 2. Get the generated program ID
+solana address -k target/deploy/my_program-keypair.json
+
+# 3. Update Anchor.toml [programs.devnet] with the real ID
+# 4. Update declare_id!() in programs/my_program/src/lib.rs
+# 5. Rebuild with correct ID
+anchor build
+
+# 6. Deploy
+anchor deploy --provider.cluster devnet
+```
+
+See `examples/anchor/` for a full annotated `Anchor.toml` and multi-program setup.
+
+---
+
+## Program Upgrades
+
+After the first deploy, use `anchor upgrade` (not `anchor deploy`) to update your program without changing its address.
+
+### Upgrade Flow
+
+```bash
+# 1. Make code changes
+# 2. Build
+anchor build
+
+# 3. Upgrade (keeps the same program ID)
+anchor upgrade --program-id YOUR_PROGRAM_ID target/deploy/my_program.so --provider.cluster devnet
+
+# 4. Verify
+solana program show YOUR_PROGRAM_ID
+```
+
+### Deploy vs Upgrade
+
+| Command          | When to use        | What happens                                 |
+| ---------------- | ------------------ | -------------------------------------------- |
+| `anchor deploy`  | First time         | Creates new program at generated address     |
+| `anchor upgrade` | Subsequent changes | Updates existing program, keeps same address |
+
+### Upgrade Authority
+
+The wallet that deployed the program is its **upgrade authority**. Only this wallet can upgrade it.
+
+```bash
+# Check who can upgrade a program
+solana program show YOUR_PROGRAM_ID
+
+# Transfer authority to another wallet (e.g., multisig)
+solana program set-upgrade-authority YOUR_PROGRAM_ID \
+  --new-upgrade-authority NEW_AUTHORITY_PUBKEY
+
+# Freeze program (no more upgrades — IRREVERSIBLE)
+solana program set-upgrade-authority YOUR_PROGRAM_ID --final
+```
+
+> For mainnet: transfer upgrade authority to a **Squads multisig** before launch (see Phase 7).
+
+---
+
+## IDL to Frontend: Connecting Contracts to Your dApp
+
+After deploying, the IDL bridges your Anchor program to the TypeScript frontend.
+
+### Quick Setup
+
+```bash
+# 1. Build generates IDL + types
+cd contracts/
+anchor build
+# Output:
+#   target/idl/my_program.json       ← IDL (account schemas, instructions)
+#   target/types/my_program.ts       ← TypeScript types
+
+# 2. Copy to frontend
+mkdir -p frontend/src/idl
+cp target/idl/my_program.json frontend/src/idl/
+cp target/types/my_program.ts frontend/src/idl/
+
+# 3. Install dependencies
+cd frontend/
+npm install @coral-xyz/anchor @solana/wallet-adapter-react @solana/web3.js
+```
+
+### Use in React
+
+```tsx
+import { AnchorProvider, Program, BN } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
+import idl from "../idl/my_program.json";
+
+// Create program instance
+const provider = new AnchorProvider(connection, wallet, {
+  commitment: "confirmed",
+});
+const program = new Program(idl, provider);
+
+// Call an instruction
+await program.methods
+  .deposit(new BN(1_000_000))
+  .accounts({ owner: wallet.publicKey, vault: vaultPda })
+  .rpc();
+
+// Fetch account data
+const vault = await program.account.vault.fetch(vaultPda);
+
+// Derive a PDA
+const [vaultPda] = PublicKey.findProgramAddressSync(
+  [Buffer.from("vault"), wallet.publicKey.toBuffer()],
+  program.programId,
+);
+```
+
+### Keep IDL in Sync
+
+Add to your frontend `package.json`:
+
+```json
+{
+  "scripts": {
+    "sync-idl": "cp ../contracts/target/idl/*.json src/idl/ && cp ../contracts/target/types/*.ts src/idl/"
+  }
+}
+```
+
+Then after any contract change: `anchor build && cd frontend && npm run sync-idl`
+
+See `examples/frontend/` for a complete `useProgram` hook and usage patterns.
+
+---
+
 ## File Locations
 
 ```

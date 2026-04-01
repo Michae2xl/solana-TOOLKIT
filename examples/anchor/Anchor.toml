@@ -1,0 +1,54 @@
+# ═══════════════════════════════════════════════════════════════
+#  Anchor.toml — Project Configuration
+#  Docs: https://www.anchor-lang.com/docs/manifest
+# ═══════════════════════════════════════════════════════════════
+
+# ─── Programs ─────────────────────────────────────────────────
+# Map program names to their deployed addresses per cluster.
+# After first deploy, replace placeholder IDs with real ones:
+#   solana address -k target/deploy/my_program-keypair.json
+
+[programs.devnet]
+my_program = "YOUR_PROGRAM_ID_HERE"
+
+[programs.mainnet]
+my_program = "YOUR_PROGRAM_ID_HERE"
+
+# For localnet (anchor test), Anchor auto-generates IDs
+[programs.localnet]
+my_program = "YOUR_PROGRAM_ID_HERE"
+
+# ─── Provider ─────────────────────────────────────────────────
+# Default cluster and wallet for CLI commands.
+# Override per-command: anchor deploy --provider.cluster devnet
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+# ─── Scripts ──────────────────────────────────────────────────
+# Run with: anchor run <name>
+# Example:  anchor run test
+
+[scripts]
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+# ─── Test Validator ───────────────────────────────────────────
+# Config for `anchor test` local validator (optional).
+# Clone accounts/programs from devnet for realistic testing.
+
+# [test.validator]
+# url = "https://api.devnet.solana.com"
+#
+# [[test.validator.clone]]
+# address = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"  # SPL Token
+#
+# [[test.validator.clone]]
+# address = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"  # USDC devnet mint
+
+# ─── Workspace ────────────────────────────────────────────────
+# Which directories contain Anchor programs.
+# Default: programs/*
+
+[workspace]
+members = ["programs/*"]
